@@ -1,16 +1,11 @@
+#define GAC_HEADER_USE_NAMESPACE
 #include <GacUICompiler.h>
-#include <Windows.h>
 
 using namespace vl::parsing;
 using namespace vl::collections;
 using namespace vl::workflow;
-using namespace vl::workflow::analyzer;
+using namespace vl::workflow::emitter;
 using namespace vl::workflow::runtime;
-
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int CmdShow)
-{
-	return SetupWindowsDirect2DRenderer();
-}
 
 const wchar_t* WorkflowScript = LR"workflow(
 
@@ -22,17 +17,15 @@ using presentation::theme::*;
 
 func CreateMainWindow() : Window*
 {
-	var theme = ITheme::GetCurrentTheme();
-
-	var window = new Window*(theme.CreateWindowStyle());
+	var window = new Window*(ThemeName::Window);
 	window.Text = "Hello, world!";
-	window.ClientSize = cast Size "x:480 y:320";
-	window.BoundsComposition.PreferredMinSize = cast Size "x:480 y:320";
+	window.ClientSize = {x:480 y:320};
+	window.BoundsComposition.PreferredMinSize = {x:480 y:320};
 	window.MoveToScreenCenter();
 
-	var label = new Label*(theme.CreateLabelStyle());
+	var label = new Label*(ThemeName::Label);
 	label.Text = "Welcom to GacUI Library!";
-	label.Font = cast FontProperties "fontFamily:{Segoe UI} size:32";
+	label.Font = {fontFamily:"Segoe UI" size:32};
 	window.AddChild(label);
 
 	return window;

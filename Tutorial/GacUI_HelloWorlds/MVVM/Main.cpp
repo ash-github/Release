@@ -1,3 +1,4 @@
+#define GAC_HEADER_USE_NAMESPACE
 #include "UI/Source/HelloWorld.h"
 
 using namespace vl::collections;
@@ -26,7 +27,7 @@ public:
 		return userName;
 	}
 
-	void SetUserName(WString value)override
+	void SetUserName(const WString& value)override
 	{
 		userName = value;
 		UserNameErrorChanged();
@@ -46,7 +47,7 @@ public:
 		return password;
 	}
 
-	void SetPassword(WString value)override
+	void SetPassword(const WString& value)override
 	{
 		password = value;
 		PasswordErrorChanged();
@@ -77,9 +78,8 @@ public:
 void GuiMain()
 {
 	{
-		List<WString> errors;
 		FileStream fileStream(L"../UIRes/MVVM.bin", FileStream::ReadOnly);
-		auto resource = GuiResource::LoadPrecompiledBinary(fileStream, errors);
+		auto resource = GuiResource::LoadPrecompiledBinary(fileStream);
 		GetResourceManager()->SetResource(L"Resource", resource);
 	}
 	auto viewModel = MakePtr<ViewModel>();

@@ -1,15 +1,10 @@
+#define GAC_HEADER_USE_NAMESPACE
 #include "UI/Source/Demo.h"
-#include <Windows.h>
 
 using namespace vl::collections;
 using namespace vl::stream;
 using namespace vl::reflection::description;
 using namespace demo;
-
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int CmdShow)
-{
-	return SetupWindowsDirect2DRenderer();
-}
 
 Ptr<GuiImageData> folderImage;
 Ptr<GuiImageData> contactBigImage;
@@ -23,10 +18,10 @@ class Category : public Object, public ICategory
 	friend class ViewModel;
 	friend class Contact;
 protected:
-	ICategory*									parent;
-	WString										name;
-	list::ObservableList<Ptr<ICategory>>		folders;
-	list::ObservableList<Ptr<IContact>>			contacts;
+	ICategory*							parent;
+	WString								name;
+	ObservableList<Ptr<ICategory>>		folders;
+	ObservableList<Ptr<IContact>>		contacts;
 
 public:
 	Category(ICategory* _parent)
@@ -44,17 +39,17 @@ public:
 		return name;
 	}
 
-	Ptr<GuiImageData> GetImage()override
+	vl::Ptr<GuiImageData> GetImage()override
 	{
 		return folderImage;
 	}
 
-	Ptr<IValueObservableList> GetFolders()override
+	vl::Ptr<IValueObservableList> GetFolders()override
 	{
 		return folders.GetWrapper();
 	}
 
-	Ptr<IValueObservableList> GetContacts()override
+	vl::Ptr<IValueObservableList> GetContacts()override
 	{
 		return contacts.GetWrapper();
 	}
@@ -85,12 +80,12 @@ public:
 		return name;
 	}
 
-	Ptr<GuiImageData> GetBigImage()override
+	vl::Ptr<GuiImageData> GetBigImage()override
 	{
 		return contactBigImage;
 	}
 
-	Ptr<GuiImageData> GetSmallImage()override
+	vl::Ptr<GuiImageData> GetSmallImage()override
 	{
 		return contactSmallImage;
 	}
@@ -121,7 +116,7 @@ public:
 		return address;
 	}
 
-	void Update(WString _name, DateTime _birthday, WString _phone, WString _address)override
+	void Update(const WString& _name, DateTime _birthday, const WString& _phone, const WString& _address)override
 	{
 		name = _name;
 		birthday = _birthday;
@@ -149,7 +144,7 @@ public:
 class RootCategory : public Object, public ICategory
 {
 protected:
-	list::ObservableList<Ptr<ICategory>>		folders;
+	ObservableList<Ptr<ICategory>>		folders;
 
 public:
 	RootCategory()
@@ -167,17 +162,17 @@ public:
 		return L"";
 	}
 
-	Ptr<GuiImageData> GetImage()override
+	vl::Ptr<GuiImageData> GetImage()override
 	{
 		return nullptr;
 	}
 
-	Ptr<IValueObservableList> GetFolders()override
+	vl::Ptr<IValueObservableList> GetFolders()override
 	{
 		return folders.GetWrapper();
 	}
 
-	Ptr<IValueObservableList> GetContacts()override
+	vl::Ptr<IValueObservableList> GetContacts()override
 	{
 		return nullptr;
 	}
@@ -186,9 +181,9 @@ public:
 class ViewModel : public Object, public IViewModel
 {
 protected:
-	Ptr<RootCategory>							rootCategory;
-	Ptr<ICategory>								selectedCategory;
-	Ptr<IContact>								selectedContact;
+	vl::Ptr<RootCategory>							rootCategory;
+	vl::Ptr<ICategory>								selectedCategory;
+	vl::Ptr<IContact>								selectedContact;
 
 public:
 	ViewModel()
@@ -196,12 +191,12 @@ public:
 		rootCategory = new RootCategory;
 	}
 
-	Ptr<ICategory> GetRootCategory()override
+	vl::Ptr<ICategory> GetRootCategory()override
 	{
 		return rootCategory;
 	}
 
-	Ptr<ICategory> GetSelectedCategory()override
+	vl::Ptr<ICategory> GetSelectedCategory()override
 	{
 		return selectedCategory;
 	}
@@ -215,7 +210,7 @@ public:
 		}
 	}
 
-	Ptr<IContact> GetSelectedContact()override
+	vl::Ptr<IContact> GetSelectedContact()override
 	{
 		return selectedContact;
 	}
@@ -229,7 +224,7 @@ public:
 		}
 	}
 
-	void AddCategory(WString name)
+	void AddCategory(const WString& name)
 	{
 		if (auto current = dynamic_cast<Category*>(selectedCategory.Obj()))
 		{
@@ -248,7 +243,7 @@ public:
 		}
 	}
 	
-	Ptr<IContact> CreateContact()override
+	vl::Ptr<IContact> CreateContact()override
 	{
 		if (auto category = dynamic_cast<Category*>(selectedCategory.Obj()))
 		{
@@ -259,7 +254,7 @@ public:
 		return nullptr;
 	}
 
-	void AddContact(vl::Ptr<demo::IContact> contact)override
+	void AddContact(Ptr<demo::IContact> contact)override
 	{
 		dynamic_cast<Contact*>(contact.Obj())->GetCategory()->contacts.Add(contact);
 	}
@@ -276,9 +271,8 @@ public:
 void GuiMain()
 {
 	{
-		List<WString> errors;
 		FileStream fileStream(L"../UIRes/AddressBook.bin", FileStream::ReadOnly);
-		auto resource = GuiResource::LoadPrecompiledBinary(fileStream, errors);
+		auto resource = GuiResource::LoadPrecompiledBinary(fileStream);
 		GetResourceManager()->SetResource(L"Resource", resource);
 
 		folderImage = resource->GetImageByPath(L"Images/Folder");

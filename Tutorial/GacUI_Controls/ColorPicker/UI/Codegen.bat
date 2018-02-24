@@ -1,1 +1,0 @@
-..\..\..\..\Tools\GacGen.exe Resource.xml

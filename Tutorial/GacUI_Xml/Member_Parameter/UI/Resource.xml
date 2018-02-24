@@ -2,29 +2,27 @@
 <Resource>
   <Folder name="GacGenConfig">
     <Folder name="Cpp">
-      <Text name="Output">Source</Text>
-      <Text name="Include">GacUIReflection.h</Text>
+      <Text name="SourceFolder">Source</Text>
+      <Text name="Resource">..\..\UIRes\Member_Parameter.bin</Text>
+      <Text name="NormalInclude">GacUI.h</Text>
       <Text name="Name">Demo</Text>
-      <Text name="Prefix"></Text>
-    </Folder>
-    <Folder name="Res">
-      <Text name="Output">..\..\UIRes</Text>
-      <Text name="PrecompiledBinary">Member_Parameter.bin</Text>
     </Folder>
   </Folder>
   <Folder name="MainWindow">
     <Script>
-      <Workflow-ViewModel>
-        module script;
+      <Workflow>
+        <![CDATA[
+          module script;
         
-        namespace demo
-        {
-          interface IViewModel
+          namespace demo
           {
-            func GetText() : string;
+            interface IViewModel
+            {
+              func GetText() : string;
+            }
           }
-        }
-      </Workflow-ViewModel>
+        ]]>
+      </Workflow>
     </Script>
     <Instance name="MainWindowResource">
       <Instance ref.CodeBehind="false" ref.Class="demo::MainWindow">
@@ -32,7 +30,7 @@
         <Window Text="Member_Parameter" ClientSize="x:480 y:320">
           <att.BoundsComposition-set PreferredMinSize="x:480 y:320"/>
           <Label Text-eval="ViewModel.GetText()">
-            <att.Font>fontFamily:{Segoe UI} size:32 antialias:true</att.Font>
+            <att.Font>fontFamily:"Segoe UI" size:32 antialias:true</att.Font>
           </Label>
         </Window>
       </Instance>

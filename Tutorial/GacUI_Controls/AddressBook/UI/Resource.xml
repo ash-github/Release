@@ -2,19 +2,16 @@
 <Resource>
   <Folder name="GacGenConfig">
     <Folder name="Cpp">
-      <Text name="Output">Source</Text>
-      <Text name="Include">GacUIReflection.h</Text>
+      <Text name="SourceFolder">Source</Text>
+      <Text name="Resource">..\..\UIRes\AddressBook.bin</Text>
+      <Text name="NormalInclude">GacUI.h</Text>
+      <Text name="ReflectionInclude">GacUIReflection.h</Text>
       <Text name="Name">Demo</Text>
-      <Text name="Prefix"></Text>
-    </Folder>
-    <Folder name="Res">
-      <Text name="Output">..\..\UIRes</Text>
-      <Text name="PrecompiledBinary">AddressBook.bin</Text>
     </Folder>
   </Folder>
 
-  <Script>
-    <Workflow-ViewModel>
+  <Script name="ViewModelResource">
+    <Workflow>
       <![CDATA[
         module viewmodel;
 
@@ -24,61 +21,32 @@
         {
           interface IContact
           {
-            func GetName() : string;
-            prop Name : string {GetName}
-          
-            func GetBigImage() : presentation::GuiImageData^;
-            prop BigImage : presentation::GuiImageData^ {GetBigImage}
-          
-            func GetSmallImage() : presentation::GuiImageData^;
-            prop SmallImage : presentation::GuiImageData^ {GetSmallImage}
-            
-            func GetBirthday() : DateTime;
-            prop Birthday : DateTime {GetBirthday}
-            
-            func GetBirthdayText() : string;
-            prop BirthdayText : string {GetBirthdayText}
-            
-            func GetPhone() : string;
-            prop Phone : string {GetPhone}
-            
-            func GetAddress() : string;
-            prop Address : string {GetAddress}
+            prop Name         : string                      {const, not observe}
+            prop BigImage     : presentation::GuiImageData^ {const, not observe}
+            prop SmallImage   : presentation::GuiImageData^ {const, not observe}
+            prop Birthday     : DateTime                    {const, not observe}
+            prop BirthdayText : string                      {const, not observe}
+            prop Phone        : string                      {const, not observe}
+            prop Address      : string                      {const, not observe}
             
             func Update(name : string, birthday : DateTime, phone : string, address : string) : void;
           }
       
           interface ICategory
           {
-            func GetParent() : ICategory*;
-            prop Parent : ICategory* {GetParent}
-        
-            func GetName() : string;
-            prop Name : string {GetName}
-          
-            func GetImage() : presentation::GuiImageData^;
-            prop Image : presentation::GuiImageData^ {GetImage}
-
-            func GetFolders() : ObservableList^;
-            prop Folders : ObservableList^ {GetFolders}
-
-            func GetContacts() : ObservableList^;
-            prop Contacts : ObservableList^ {GetContacts}
+            prop Parent       : ICategory*                  {const, not observe}
+            prop Name         : string                      {const, not observe}
+            prop Image        : presentation::GuiImageData^ {const, not observe}
+            prop Folders      : observe ICategory^[]        {const, not observe}
+            prop Contacts     : observe IContact^[]         {const, not observe}
           }
         
           interface IViewModel
           {
             func GetRootCategory() : ICategory^;
           
-            func GetSelectedCategory() : ICategory^;
-            func SetSelectedCategory(value : ICategory^) : void;
-            event SelectedCategoryChanged();
-            prop SelectedCategory : ICategory^ {GetSelectedCategory, SetSelectedCategory : SelectedCategoryChanged}
-            
-            func GetSelectedContact() : IContact^;
-            func SetSelectedContact(value : IContact^) : void;
-            event SelectedContactChanged();
-            prop SelectedContact : IContact^ {GetSelectedContact, SetSelectedContact : SelectedContactChanged}
+            prop SelectedCategory : ICategory^ {}
+            prop SelectedContact : IContact^ {}
           
             func AddCategory(name : string) : void;
             func RemoveCategory() : void;
@@ -88,7 +56,7 @@
           }
         }
       ]]>
-    </Workflow-ViewModel>
+    </Workflow>
   </Script>
 
   <Folder name="Images">
@@ -113,6 +81,19 @@
     <Instance name="MainWindowResource">
       <Instance ref.Class="demo::MainWindow">
         <ref.Parameter Name="ViewModel" Class="demo::IViewModel"/>
+        <ref.Members>
+          <![CDATA[
+            func ClearViewSelection() : void
+            {
+              commandBigIcon.Selected = false;
+              commandSmallIcon.Selected = false;
+              commandList.Selected = false;
+              commandDetail.Selected = false;
+              commandTile.Selected = false;
+              commandInformation.Selected = false;
+            }
+          ]]>
+        </ref.Members>
         <Window ref.Name="self" Text="AddressBook" ClientSize="x:640 y:480">
           <att.BoundsComposition-set PreferredMinSize="x:640 y:480"/>
 
@@ -125,16 +106,16 @@
             <att.Enabled-bind>ViewModel.SelectedCategory is not null</att.Enabled-bind>
             <ev.Executed-eval>
               <![CDATA[
-                {
+                $Async{
                   var window = new demo::NewFolderWindow*();
                   window.MoveToScreenCenter();
-                  window.ShowModalAndDelete(self, func():void
+                  $Await window.ShowModalAsync(self);
+                  
+                  if (window.Ready)
                   {
-                    if (window.Ready)
-                    {
-                      ViewModel.AddCategory(window.FolderName);
-                    }
-                  });
+                    ViewModel.AddCategory(window.FolderName);
+                  }
+                  delete window;
                 }
               ]]>
             </ev.Executed-eval>
@@ -153,17 +134,18 @@
             <att.Enabled-bind>ViewModel.SelectedCategory is not null</att.Enabled-bind>
             <ev.Executed-eval>
               <![CDATA[
-                {
+                $Async{
                   var contact = ViewModel.CreateContact();
-                  var window = new demo::NewContactWindow*(contact);
+                  var window = new demo::NewContactWindow*();
                   window.MoveToScreenCenter();
-                  window.ShowModalAndDelete(self, func():void
+                  window.SetContact(contact);
+                  $Await window.ShowModalAsync(self);
+                  
+                  if (window.Ready)
                   {
-                    if (window.Ready)
-                    {
-                      ViewModel.AddContact(contact);
-                    }
-                  });
+                    ViewModel.AddContact(contact);
+                  }
+                  delete window;
                 }
               ]]>
             </ev.Executed-eval>
@@ -172,11 +154,13 @@
             <att.Enabled-bind>ViewModel.SelectedContact is not null</att.Enabled-bind>
             <ev.Executed-eval>
               <![CDATA[
-                {
-                  var window = new demo::NewContactWindow*(ViewModel.SelectedContact);
+                $Async{
+                  var window = new demo::NewContactWindow*();
                   window.ForEdit = true;
                   window.MoveToScreenCenter();
-                  window.ShowModalAndDelete(self, func():void{});
+                  window.SetContact(ViewModel.SelectedContact);
+                  $Await window.ShowModalAsync(self);
+                  delete window;
                 }
               ]]>
             </ev.Executed-eval>
@@ -193,22 +177,22 @@
           </ToolstripCommand>
 
           <ToolstripCommand ref.Name="commandBigIcon" Image-uri="res://Images/BigIcon">
-            <ev.Executed>commandBigIcon_Executed</ev.Executed>
+            <ev.Executed-eval><![CDATA[listViewContacts.SetView(BigIcon);]]></ev.Executed-eval>
           </ToolstripCommand>
           <ToolstripCommand ref.Name="commandSmallIcon" Image-uri="res://Images/SmallIcon">
-            <ev.Executed>commandSmallIcon_Executed</ev.Executed>
+            <ev.Executed-eval><![CDATA[listViewContacts.SetView(SmallIcon);]]></ev.Executed-eval>
           </ToolstripCommand>
           <ToolstripCommand ref.Name="commandList" Image-uri="res://Images/List">
-            <ev.Executed>commandList_Executed</ev.Executed>
+            <ev.Executed-eval><![CDATA[listViewContacts.SetView(ListViewView::List);]]></ev.Executed-eval>
           </ToolstripCommand>
           <ToolstripCommand ref.Name="commandDetail" Image-uri="res://Images/Detail" Selected="true">
-            <ev.Executed>commandDetail_Executed</ev.Executed>
+            <ev.Executed-eval><![CDATA[listViewContacts.SetView(Detail);]]></ev.Executed-eval>
           </ToolstripCommand>
           <ToolstripCommand ref.Name="commandTile" Image-uri="res://Images/Tile">
-            <ev.Executed>commandTile_Executed</ev.Executed>
+            <ev.Executed-eval><![CDATA[listViewContacts.SetView(Tile);]]></ev.Executed-eval>
           </ToolstripCommand>
           <ToolstripCommand ref.Name="commandInformation" Image-uri="res://Images/Information">
-            <ev.Executed>commandInformation_Executed</ev.Executed>
+            <ev.Executed-eval><![CDATA[listViewContacts.SetView(Information);]]></ev.Executed-eval>
           </ToolstripCommand>
 
           <Table CellPadding="5" AlignmentToParent="left:0 top:0 right:0 bottom:0" MinSizeLimitation="LimitToElementAndChildren">
@@ -245,7 +229,7 @@
                   </Cell>
 
                   <Cell Site="row:1 column:0">
-                    <BindableTreeView ref.Name="treeViewFolders" HorizontalAlwaysVisible="false" VerticalAlwaysVisible="false">
+                    <BindableTreeView ref.Name="treeViewFolders" HorizontalAlwaysVisible="false" VerticalAlwaysVisible="false" env.ItemType="demo::ICategory^">
                       <att.ItemSource-eval>ViewModel.GetRootCategory()</att.ItemSource-eval>
                       <att.TextProperty>Name</att.TextProperty>
                       <att.ImageProperty>Image</att.ImageProperty>
@@ -288,7 +272,7 @@
                   </Cell>
 
                   <Cell Site="row:1 column:0">
-                    <BindableListView ref.Name="listViewContacts" View="Detail" IconSize="x:16 y:16" HorizontalAlwaysVisible="false" VerticalAlwaysVisible="false">
+                    <BindableListView ref.Name="listViewContacts" View="Detail" HorizontalAlwaysVisible="false" VerticalAlwaysVisible="false" env.ItemType="demo::IContact^">
                       <att.BoundsComposition-set AlignmentToParent="left:0 top:0 right:0 bottom:0"/>
                       <att.ItemSource-bind>ViewModel.SelectedCategory.Contacts ?? null</att.ItemSource-bind>
                       <att.LargeImageProperty>BigImage</att.LargeImageProperty>
@@ -302,8 +286,8 @@
                       </att.Columns>
 
                       <att.DataColumns>
-                        <Int32>1</Int32>
-                        <Int32>2</Int32>
+                        <_>1</_>
+                        <_>2</_>
                       </att.DataColumns>
                     </BindableListView>
                   </Cell>
@@ -317,9 +301,15 @@
     
     <Instance name="NewFolderWindowResource">
       <Instance ref.CodeBehind="false" ref.Class="demo::NewFolderWindow">
-        <ref.Property Name="FolderName" Type="string" Value=""/>
-        <ref.Property Name="Ready" Type="bool" Value="true"/>
+        <ref.Members>
+          <![CDATA[
+            prop FolderName : string = "" {}
+            
+            var Ready : bool = true;
+          ]]>
+        </ref.Members>
         <Window ref.Name="self" Text="New Folder" ClientSize="x:240 y:120" MaximizedBox="false" MinimizedBox="false" SizeBox="false">
+          <att.BoundsComposition-set PreferredMinSize="x:240 y:120"/>
           <att.FolderName-bind>textBoxName.Text</att.FolderName-bind>
           
           <Table CellPadding="5" AlignmentToParent="left:0 top:0 right:0 bottom:0">
@@ -364,11 +354,25 @@
 
     <Instance name="NewContactWindowResource">
       <Instance ref.CodeBehind="false" ref.Class="demo::NewContactWindow">
-        <ref.Property Name="ForEdit" Type="bool" Value="false"/>
-        <ref.Property Name="Ready" Type="bool" Value="true"/>
-        <ref.Parameter Name="Contact" Class="demo::IContact"/>
-        <Window ref.Name="self" Text-bind="self.ForEdit ? 'Edit Contact' : 'New Contact'" ClientSize="x:480 y:360" MaximizedBox="false" MinimizedBox="false" SizeBox="false">
-
+        <ref.Members>
+          <![CDATA[
+            prop ForEdit : bool = false {}
+          
+            var Ready : bool = false;
+            var contact : IContact^ = null;
+            
+            func SetContact(value : IContact^): void
+            {
+              contact = value;
+              textBoxName.Text = contact.Name;
+              textBoxPhone.Text = contact.Phone;
+              textBoxAddress.Text = contact.Address;
+              datePickerBirthday.Date = contact.Birthday;
+            }
+          ]]>
+        </ref.Members>
+        <Window ref.Name="self" Text-bind="self.ForEdit ? 'Edit Contact' : 'New Contact'" ClientSize="x:480 y:400" MaximizedBox="false" MinimizedBox="false" SizeBox="false">
+          <att.BoundsComposition-set PreferredMinSize="x:480 y:400"/>
           <Table CellPadding="5" AlignmentToParent="left:0 top:0 right:0 bottom:0">
             <att.Rows>
               <CellOption>composeType:MinSize</CellOption>
@@ -389,7 +393,7 @@
               <Label Text="Name:"/>
             </Cell>
             <Cell Site="row:0 column:1 columnSpan:3">
-              <DocumentTextBox ref.Name="textBoxName" EditMode="Editable" Text-eval="Contact.Name">
+              <DocumentTextBox ref.Name="textBoxName" EditMode="Editable">
                 <att.BoundsComposition-set AlignmentToParent="left:0 top:0 right:0 bottom:0"/>
               </DocumentTextBox>
             </Cell>
@@ -398,7 +402,7 @@
               <Label Text="Phone:"/>
             </Cell>
             <Cell Site="row:1 column:1 columnSpan:3">
-              <DocumentTextBox ref.Name="textBoxPhone" EditMode="Editable" Text-eval="Contact.Phone">
+              <DocumentTextBox ref.Name="textBoxPhone" EditMode="Editable">
                 <att.BoundsComposition-set AlignmentToParent="left:0 top:0 right:0 bottom:0"/>
               </DocumentTextBox>
             </Cell>
@@ -407,7 +411,7 @@
               <Label Text="Address:"/>
             </Cell>
             <Cell Site="row:2 column:1 columnSpan:3">
-              <DocumentTextBox ref.Name="textBoxAddress" EditMode="Editable" Text-eval="Contact.Address">
+              <DocumentTextBox ref.Name="textBoxAddress" EditMode="Editable">
                 <att.BoundsComposition-set AlignmentToParent="left:0 top:0 right:0 bottom:0"/>
               </DocumentTextBox>
             </Cell>
@@ -416,7 +420,7 @@
               <Label Text="Birthday:"/>
             </Cell>
             <Cell Site="row:3 column:1 columnSpan:3">
-              <DatePicker ref.Name="datePickerBirthday" Date-eval="Contact.Birthday">
+              <DatePicker ref.Name="datePickerBirthday">
                 <att.BoundsComposition-set AlignmentToParent="left:0 top:0 bottom:0"/>
               </DatePicker>
             </Cell>
@@ -427,7 +431,8 @@
                 <ev.Clicked-eval>
                   <![CDATA[
                     {
-                      Contact.Update(textBoxName.Text, datePickerBirthday.Date, textBoxPhone.Text, textBoxAddress.Text);
+                      self.contact.Update(textBoxName.Text, datePickerBirthday.Date, textBoxPhone.Text, textBoxAddress.Text);
+                      self.Ready = true;
                       self.Close();
                     }
                   ]]>
@@ -440,7 +445,8 @@
                 <ev.Clicked-eval>
                   <![CDATA[
                     {
-                      self.Ready = false; self.Close();
+                      self.Ready = false;
+                      self.Close();
                     }
                   ]]>
                 </ev.Clicked-eval>

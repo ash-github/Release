@@ -2,14 +2,10 @@
 <Resource>
   <Folder name="GacGenConfig">
     <Folder name="Cpp">
-      <Text name="Output">Source</Text>
-      <Text name="Include">GacUIReflection.h</Text>
+      <Text name="SourceFolder">Source</Text>
+      <Text name="Resource">..\..\UIRes\Instance_Control.bin</Text>
+      <Text name="NormalInclude">GacUI.h</Text>
       <Text name="Name">Demo</Text>
-      <Text name="Prefix"></Text>
-    </Folder>
-    <Folder name="Res">
-      <Text name="Output">..\..\UIRes</Text>
-      <Text name="PrecompiledBinary">Instance_Control.bin</Text>
     </Folder>
   </Folder>
   <Folder name="MainWindow">
@@ -18,7 +14,7 @@
         <Window Text="Instance_Control" ClientSize="x:480 y:320">
           <att.BoundsComposition-set PreferredMinSize="x:480 y:320"/>
           <x:MyControl Text="This is a control!">
-            <att.Font>fontFamily:{Segoe UI} size:32 antialias:true</att.Font>
+            <att.Font>fontFamily:"Segoe UI" size:32 antialias:true</att.Font>
           </x:MyControl>
         </Window>
       </Instance>
